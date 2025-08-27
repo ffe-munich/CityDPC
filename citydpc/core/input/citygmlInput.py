@@ -630,13 +630,6 @@ def _get_building_surfaces_from_xml_element(
             building,
             element,
             nsmap,
-            "bldg:boundedBy/bldg:WallSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
             "bldg:boundedBy/bldg:RoofSurface",
             geometry,
         )
@@ -645,13 +638,6 @@ def _get_building_surfaces_from_xml_element(
             element,
             nsmap,
             "bldg:boundedBy/bldg:GroundSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "bldg:boundedBy/bldg:ClosureSurface",
             geometry,
         )
 
@@ -724,13 +710,6 @@ def _get_building_surfaces_from_xml_element(
             building,
             element,
             nsmap,
-            "boundary/con:WallSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
             "boundary/con:RoofSurface",
             geometry,
         )
@@ -739,13 +718,6 @@ def _get_building_surfaces_from_xml_element(
             element,
             nsmap,
             "boundary/con:GroundSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "boundary/con:ClosureSurface",
             geometry,
         )
         return

@@ -5,6 +5,9 @@ from numpy import linalg as LA
 from itertools import tee, chain
 from .exceptions import SurfacePlanarityWarning, SurfaceCoorNumberWarning
 
+from shapely.geometry import Polygon
+from shapely.geometry.polygon import orient
+
 from citydpc.logger import logger
 from . import SurfaceConfig
 from citydpc.core.input import CHECK_IF_SURFACES_ARE_PLANAR, FIX_GROUNDSURFACE_OUTLIERS
@@ -47,20 +50,24 @@ class SurfaceGML(object):
         self.surface_tilt = None
         self.normal_uni = None
         self.attributes = {}
-
-        useless_points = []
         split_surface = list(zip(*[iter(self.gml_surface)] * 3))
-        for three_points in self.n_wise(split_surface, 3):
-            useless_points.append(
-                self.check_if_points_on_line(
-                    np.asarray(three_points[1]),
-                    np.asarray(three_points[0]),
-                    np.asarray(three_points[2]),
-                )
-            )
-        for element in split_surface[:]:
-            if element in useless_points:
-                split_surface.remove(element)
+
+        poly2d = [(pt[0], pt[1]) for pt in split_surface]
+        polygon = Polygon(poly2d)
+        # Orient to keep consistent winding
+        polygon = orient(polygon)
+        # Simplify polygon (tolerance can be adjusted)
+        simplified = polygon.simplify(0.01, preserve_topology=True)
+        # Get the simplified coordinates and re-add Z from original
+        simplified_coords = list(simplified.exterior.coords)
+        # Map back to original Z values (nearest neighbor)
+        def find_z(xy):
+            for pt in split_surface:
+                if np.isclose(pt[0], xy[0]) and np.isclose(pt[1], xy[1]):
+                    return pt[2]
+            return 0.0
+        split_surface = [(xy[0], xy[1], find_z(xy)) for xy in simplified_coords]
+
         self.gml_surface = list(chain(*split_surface))
         if len(self.gml_surface) < 12:
             self.isSurface = False

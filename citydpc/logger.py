@@ -3,7 +3,7 @@ import logging
 logging.captureWarnings(True)
 logging.basicConfig(
     format=" %(asctime)s %(levelname)s: %(message)s",
-    level=logging.INFO,
+    level=logging.ERROR,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 

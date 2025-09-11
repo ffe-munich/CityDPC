@@ -23,10 +23,6 @@ from citydpc.core.object.fileUtil import CityFile
 from citydpc.core.object.geometry import GeometryGML
 from citydpc.tools.partywall import get_party_walls
 from . import CALC_ROOF_VOLUME_ON_IMPORT
-from citydpc.util.citydpcWarnings import warn
-from citydpc.core.object.exceptions import (
-    SurfaceSplitDueToMultipleSurfaceMembers,
-)
 
 
 def load_buildings_from_xml_file(
@@ -788,52 +784,31 @@ def _add_surface_from_element(
         id = _get_attrib_of_xml_element(
             surface_E, nsmap, ".", "{http://www.opengis.net/gml}id"
         )
-        surfaceMember_Es = surface_E.findall(".//gml:surfaceMember", nsmap)
-        for j, surfaceMember_E in enumerate(surfaceMember_Es):
-
-            poly_E = surfaceMember_E.find("gml:Polygon", nsmap)
-            poly_id = _get_attrib_of_xml_element(
-                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
-            )
-            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            # we are splitting surfaces consisting of multiple surfaceMembers
-            # (for example found in curved walls) into individual surfaces by
-            # using the surface id and the member index
-            if len(surfaceMember_Es) == 1:
-                if id:
-                    used_id = id
-                else:
-                    used_id = f"citydpc_{id_str}_{i}"
-            else:
-                if id:
-                    used_id = f"{id}_{j}"
-                else:
-                    used_id = f"citydpc_{id_str}_{i}_{j}"
-                warn(
-                    f"Surface {used_id} consists of multiple surface members. "
-                    + "Splitting for simplicity.",
-                    SurfaceSplitDueToMultipleSurfaceMembers,
+        poly_E = surface_E.find(".//gml:Polygon", nsmap)
+        poly_id = _get_attrib_of_xml_element(
+            poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+        )
+        coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+        used_id = id if id else f"citydpc_{id_str}_{i}"
+        newSurface = SurfaceGML(
+            coordinates, used_id, target_str.rsplit(":")[-1], poly_id
+        )
+        if newSurface.isSurface:
+            genStrings = surface_E.findall("gen:stringAttribute", nsmap)
+            for i in genStrings:
+                key = i.attrib["name"]
+                newSurface.attributes[key] = _get_text_of_xml_element(
+                    i, nsmap, "gen:value"
                 )
-            newSurface = SurfaceGML(
-                coordinates, used_id, target_str.rsplit(":")[-1], poly_id
-            )
-            if newSurface.isSurface:
-                genStrings = surface_E.findall("gen:stringAttribute", nsmap)
-                for i in genStrings:
-                    key = i.attrib["name"]
-                    newSurface.attributes[key] = _get_text_of_xml_element(
-                        i, nsmap, "gen:value"
-                    )
-                genDouble = surface_E.findall("gen:doubleAttribute", nsmap)
-                for i in genDouble:
-                    key = i.attrib["name"]
-                    newSurface.attributes[key] = _get_float_of_xml_element(
-                        i, nsmap, "gen:value"
-                    )
-                geometry.add_surface(newSurface)
-            else:
-                building._warn_invalid_surface(used_id)
-
+            genDouble = surface_E.findall("gen:doubleAttribute", nsmap)
+            for i in genDouble:
+                key = i.attrib["name"]
+                newSurface.attributes[key] = _get_float_of_xml_element(
+                    i, nsmap, "gen:value"
+                )
+            geometry.add_surface(newSurface)
+        else:
+            building._warn_invalid_surface(used_id)
 
 def _get_text_of_xml_element(
     element: ET.Element, nsmap: dict, target: str

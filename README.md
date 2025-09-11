@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.21 Removed not FfE relevant changes and improved points filtering
 - 0.1.20 CityGML - read all surfaceMember elements
 - 0.1.19 fix measuredHeight assignment on CityJSON import
 - 0.1.18 more warning options
